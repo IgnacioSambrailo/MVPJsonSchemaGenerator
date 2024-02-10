@@ -118,6 +118,7 @@
         '<option value="ObjectNum" ' + (type === 'ObjectNum' ? 'selected' : '') + '>Array de Numeros</option>' +
         '<option value="Number" ' + (type === 'Number' ? 'selected' : '') + '>Number</option>' +
         '<option value="String" ' + (type === 'String' ? 'selected' : '') + '>String</option>' +
+        '<option value="Boolean" ' + (type === 'Boolean' ? 'selected' : '') + '>Boolean</option>' +
         '</select>';
       cell3.innerHTML = '<input type="checkbox" name="required" ' + (required ? 'checked' : '') + ' onchange="guardarFilasEnLocalStorage()">';
       cell4.innerHTML = '<button onclick="toggleMasOpciones(this.parentNode.parentNode)">Más Opciones</button>';
