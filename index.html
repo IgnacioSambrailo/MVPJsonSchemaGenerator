@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="main.css">
+  <title>Formulario Dinámico</title>
+  <style>
+    #popup {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      max-width: 80%;
+      max-height: 80%;
+      overflow: hidden;
+      padding: 20px;
+      background-color: white;
+      border: 1px solid #ccc;
+      z-index: 1000;
+    }
+
+    #overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 999;
+    }
+  </style>
+</head>
+
+<body>
+  <script src="generadorSchema.js"></script>
+  <button onclick="agregarFila()">+</button>
+
+  <table id="miTabla">
+    <thead>
+      <tr>
+        <th>path</th>
+        <th>type</th>
+        <th>required</th>
+        <th>Más Opciones</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Filas se cargarán aquí dinámicamente -->
+    </tbody>
+  </table>
+
+  <button onclick="generarConsola()">Generate</button>
+
+  <div id="overlay"></div>
+  <div id="popup">
+    <pre id="generatedResult"></pre>
+    <button onclick="copyToClipboard()">Copy to Clipboard</button>
+    <button onclick="closePopup()">Close</button>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', cargarFilas);
+
+    function cargarFilas() {
+      var filasGuardadas = JSON.parse(localStorage.getItem('filas')) || [];
+
+      filasGuardadas.forEach(function (fila) {
+        agregarFila(fila.path, fila.type, fila.required, fila.masOpciones);
+      });
+    }
+
+    function guardarFilasEnLocalStorage() {
+      var filas = [];
+      var table = document.getElementById("miTabla").getElementsByTagName('tbody')[0];
+
+      for (var i = 0; i < table.rows.length; i++) {
+        var row = table.rows[i];
+        var path = row.cells[0].querySelector('input').value;
+        var type = row.cells[1].querySelector('select').value;
+        var required = row.cells[2].querySelector('input').checked;
+
+        var masOpciones = null;
+        var toggleContainerMasOpciones = row.querySelector('.toggle-container-mas-opciones');
+        if (toggleContainerMasOpciones) {
+          masOpciones = toggleContainerMasOpciones.querySelector('input').value;
+        }
+
+        filas.push({
+          path: path,
+          type: type,
+          required: required,
+          masOpciones: masOpciones
+        });
+      }
+
+      localStorage.setItem('filas', JSON.stringify(filas));
+    }
+
+    function agregarFila(path = '', type = 'Object', required = false, masOpciones = '') {
+      var table = document.getElementById("miTabla").getElementsByTagName('tbody')[0];
+      var row = table.insertRow(table.rows.length);
+      var cell1 = row.insertCell(0);
+      var cell2 = row.insertCell(1);
+      var cell3 = row.insertCell(2);
+      var cell4 = row.insertCell(3);
+      var cell5 = row.insertCell(4);
+
+      cell1.innerHTML = '<input type="text" name="path" value="' + path + '" oninput="guardarFilasEnLocalStorage()">';
+      cell2.innerHTML = '<select name="type" onchange="toggletype(this)">' +
+        '<option value="Object" ' + (type === 'Object' ? 'selected' : '') + '>Object</option>' +
+        '<option value="Object[]" ' + (type === 'Object[]' ? 'selected' : '') + '>Array de Objetos</option>' +
+        '<option value="ObjectStr" ' + (type === 'ObjectStr' ? 'selected' : '') + '>Array de Strings</option>' +
+        '<option value="ObjectNum" ' + (type === 'ObjectNum' ? 'selected' : '') + '>Array de Numeros</option>' +
+        '<option value="Number" ' + (type === 'Number' ? 'selected' : '') + '>Number</option>' +
+        '<option value="String" ' + (type === 'String' ? 'selected' : '') + '>String</option>' +
+        '</select>';
+      cell3.innerHTML = '<input type="checkbox" name="required" ' + (required ? 'checked' : '') + ' onchange="guardarFilasEnLocalStorage()">';
+      cell4.innerHTML = '<button onclick="toggleMasOpciones(this.parentNode.parentNode)">Más Opciones</button>';
+      cell5.innerHTML = '<button onclick="eliminarFila(this)">Eliminar</button>';
+
+      // Restaurar el toggle de más opciones si existe
+      if (masOpciones) {
+        toggleMasOpciones(row);
+        row.querySelector('.toggle-container-mas-opciones input').value = masOpciones;
+      }
+
+      guardarFilasEnLocalStorage();
+    }
+
+    function eliminarFila(button) {
+      var row = button.parentNode.parentNode;
+      row.parentNode.removeChild(row);
+      guardarFilasEnLocalStorage();
+    }
+
+    function toggleMasOpciones(row) {
+      var toggleContainer = row.querySelector('.toggle-container-mas-opciones');
+
+      // Eliminar contenedor anterior
+      if (toggleContainer) {
+        row.removeChild(toggleContainer);
+        guardarFilasEnLocalStorage();
+        return;
+      }
+
+      var typeSeleccionado = row.querySelector('[name="type"]').value;
+
+      // Crear nuevo contenedor según el type seleccionado
+      if (typeSeleccionado === 'Number') {
+        var toggleHTML = '<div class="toggle-container-mas-opciones"><label>Más opciones para Number:</label><input type="text" name="masOpcionesNumber"></div>';
+        toggleContainer = createHTML(toggleHTML);
+        row.appendChild(toggleContainer);
+      } else if (typeSeleccionado === 'Object') {
+        var toggleHTML = '<div class="toggle-container-mas-opciones"><label>Más opciones para Object:</label><input type="text" name="masOpcionesObject"></div>';
+        toggleContainer = createHTML(toggleHTML);
+        row.appendChild(toggleContainer);
+      }
+
+      guardarFilasEnLocalStorage();
+    }
+
+    function toggletype(select) {
+      var selectedtype = select.value;
+      var row = select.parentNode.parentNode;
+      var toggleContainer = row.querySelector('.toggle-container');
+
+      // Eliminar contenedor anterior
+      if (toggleContainer) {
+        row.removeChild(toggleContainer);
+      }
+
+      // Crear nuevo contenedor según el type seleccionado
+      if (selectedtype === 'Number') {
+        var toggleHTML = '<div class="toggle-container"><label>Configuración específica para Number:</label><input type="text" name="configNumber"></div>';
+        toggleContainer = createHTML(toggleHTML);
+        row.appendChild(toggleContainer);
+      } else if (selectedtype === 'Object') {
+        var toggleHTML = '<div class="toggle-container"><label>Configuración específica para Object:</label><input type="text" name="configObject"></div>';
+        toggleContainer = createHTML(toggleHTML);
+        row.appendChild(toggleContainer);
+      }
+
+      guardarFilasEnLocalStorage();
+    }
+
+    function generarConsola() {
+        console.log(localStorage.getItem('filas'))
+        let schema = generate_json_schema(JSON.parse(localStorage.getItem('filas')))
+        console.log(JSON.stringify(schema))
+      document.getElementById('generatedResult').textContent = JSON.stringify(schema);
+
+      // Mostrar el popup y overlay
+      document.getElementById('popup').style.display = 'block';
+      document.getElementById('overlay').style.display = 'block';
+    }
+
+    function copyToClipboard() {
+        var copyText = document.getElementById("generatedResult");
+        var range = document.createRange();
+        range.selectNode(copyText);
+        window.getSelection().removeAllRanges();
+        window.getSelection().addRange(range);
+        document.execCommand("copy");
+        window.getSelection().removeAllRanges();
+        alert("Copied to clipboard: " + copyText.textContent);
+    }
+
+    function closePopup() {
+      // Ocultar el popup y overlay
+      document.getElementById('popup').style.display = 'none';
+      document.getElementById('overlay').style.display = 'none';
+    }
+
+    function createHTML(htmlString) {
+      var template = document.createElement('template');
+      template.innerHTML = htmlString.trim();
+      return template.content.firstChild;
+    }
+  </script>
+
+</body>
+
+</html>
