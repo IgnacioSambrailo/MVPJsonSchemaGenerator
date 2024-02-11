@@ -3,6 +3,7 @@ var keys = ["data", "data.id", "data.address", "data.address.state", "data.addre
 var mandatory = [true, true, true, true, false, false, false, true, true, true, true, true, true, true, true, true, false, false, true, false, false, false, true, false, false, false, false, true, true, true, true, true];
 var types = ["Object[]", "String", "Object", "Object", "String", "String", "String", "String", "Object", "String", "String", "Object", "Number", "Number", "Number", "String", "Number", "Object[]", "String", "Boolean", "Boolean", "Object", "Enum", "String", "Object[]", "Enum", "Number", "Object[]", "String", "String", "String", "Enum"];
 var enumValues = ["","","","","","","","","","","","","","","","","","","","","","",["Pepito1","Pepito2"],"","",["prueba","prueba2"],"","","","","",["Pepito","pepito2"]]
+var type_of_response = "list"
 
 function zip(keys,mandatory,types,enumValues) {
     const zipArray = []
@@ -24,6 +25,9 @@ function setear_nivel(key, tipos, current_level){
     propiedades.forEach(function (propiedad){
         p = p + propiedad
         if (propiedad != propiedades.at(-1)){
+
+            
+
             switch(tipos[p]){
                 case "Object[]":
                     current_level = current_level[propiedad]["items"]["properties"]
@@ -42,32 +46,32 @@ function setear_nivel_mandatorio(key, tipos, current_level){
     var propiedades = key.split(".")
     var prop = ""
     if (propiedades.length >= 2){
-        current_level = current_level["properties"]//Entra en propertires del schema
+        current_level = Numbercurrent_level["items"]["properties"]//Entra en propertires del schema
         for (var i = 0; i<propiedades.length-1;i++){
             prop = prop + propiedades[i]
                 switch(tipos[prop]){
                     case "Object[]":
                         current_level = current_level[propiedades[i]]["items"]
                         if(propiedades[i] != propiedades.at(-2)){
-                            current_level = current_level["properties"]
+                            current_level = Numbercurrent_level["items"]["properties"]
                         }
                         break;
                     case "ObjectStr":
                     current_level = current_level[propiedades[i]]["items"]
                     if(propiedades[i] != propiedades.at(-2)){
-                        current_level = current_level["properties"]
+                        current_level = Numbercurrent_level["items"]["properties"]
                     }
                     break;
                     case "ObjectNum":
                         current_level = current_level[propiedades[i]]["items"]
                         if(propiedades[i] != propiedades.at(-2)){
-                            current_level = current_level["properties"]
+                            current_level = Numbercurrent_level["items"]["properties"]
                         }
                         break;
                     case "Object":
                         current_level = current_level[propiedades[i]]
                         if(propiedades[i] != propiedades.at(-2)){
-                            current_level = current_level["properties"]
+                            current_level = Numbercurrent_level["items"]["properties"]
                         }
                         break;
                 }
@@ -77,13 +81,31 @@ function setear_nivel_mandatorio(key, tipos, current_level){
     return current_level["required"]
 }
 
-function generate_json_schema(paths){
-    var schema = {
-        "$schema": "http://json-schema.org/draft-07/schema#",
-        "type": "object",
-        "properties": {},
-        "required" : []
+function generate_json_schema(starts, paths){
+
+    type_of_response = starts;
+
+    console.log(type_of_response);
+
+    if(type_of_response == "list"){
+        var schema = {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "array",
+            "items": {
+                    "type": "object",
+                    "properties": {}
+                  },
+            "required" : []
+        }
+    }else{
+        var schema = {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "properties": {},
+            "required" : []
+        }
     }
+
     var tipos = {}
     for (var k = 0; k<paths.length;k++){
         tipos[paths[k]["path"]] = paths[k]["type"]
@@ -91,12 +113,17 @@ function generate_json_schema(paths){
 
     // Iteramos sobre cada key y construimos el esquema
     paths.forEach(function(path){
-        var current_level = setear_nivel(path["path"], tipos, schema["properties"])
+        if(type_of_response == "list"){
+            var current_level = setear_nivel(path["path"], tipos, schema["items"]["properties"])
+        }else{
+            var current_level = setear_nivel(path["path"], tipos, schema["properties"])
+        }
         if (path["path"].split(".").length == 1){
             var ultimaProp = path["path"].split(".")[0]
         }else{
             var ultimaProp = path["path"].split(".").at(-1)
-        }     
+        }
+        console.log(current_level);     
         switch(tipos[path["path"]].toLowerCase()){
             case "object[]":
                 current_level[ultimaProp] = {

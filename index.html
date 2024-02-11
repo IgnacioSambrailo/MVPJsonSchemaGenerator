@@ -38,6 +38,10 @@
 <body>
   <script src="generadorSchema.js"></script>
   <button onclick="agregarFila()">+</button>
+  <select name="starts_with" id="type_of_response">
+    <option value="list">List</option>
+    <option value="object">Object</option>
+  </select>
 
   <table id="miTabla">
     <thead>
@@ -191,9 +195,15 @@
 
     function generarConsola() {
         console.log(localStorage.getItem('filas'))
-        let schema = generate_json_schema(JSON.parse(localStorage.getItem('filas')))
+
+        var type_of_response = document.getElementById("type_of_response");
+        var value = e.value;
+
+        console.log(value);
+
+        let schema = generate_json_schema(value, JSON.parse(localStorage.getItem('filas')))
         console.log(JSON.stringify(schema))
-      document.getElementById('generatedResult').textContent = JSON.stringify(schema);
+        document.getElementById('generatedResult').textContent = JSON.stringify(schema);
 
       // Mostrar el popup y overlay
       document.getElementById('popup').style.display = 'block';
